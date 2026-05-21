@@ -2,42 +2,27 @@ import streamlit as st
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import db
-import json
-import os
 from datetime import datetime
 
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(
-    page_title="Real Chat App",
+    page_title="WhatsApp Clone",
     page_icon="💬",
     layout="wide"
 )
 
 # ---------------- FIREBASE SETUP ----------------
-
-firebase_config = {
-    "type": "service_account",
-    "project_id": "YOUR_PROJECT_ID",
-    "private_key_id": "YOUR_PRIVATE_KEY_ID",
-    "private_key": "YOUR_PRIVATE_KEY",
-    "client_email": "YOUR_CLIENT_EMAIL",
-    "client_id": "YOUR_CLIENT_ID",
-    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-    "token_uri": "https://oauth2.googleapis.com/token",
-    "auth_provider_x509_cert_url":
-    "https://www.googleapis.com/oauth2/v1/certs",
-    "client_x509_cert_url": "YOUR_CERT_URL"
-}
-
 if not firebase_admin._apps:
 
-    cred = credentials.Certificate(firebase_config)
+    cred = credentials.Certificate(
+        "firebase-key.json"
+    )
 
     firebase_admin.initialize_app(
         cred,
         {
             "databaseURL":
-            "YOUR_FIREBASE_DATABASE_URL"
+            "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com/"
         }
     )
 
@@ -59,42 +44,60 @@ st.markdown("""
     padding: 12px;
     border-radius: 12px;
     margin-bottom: 10px;
+    width: fit-content;
+    max-width: 70%;
     color: white;
+    font-size: 16px;
 }
 
 .user-box {
     background-color: #005c4b;
     padding: 12px;
     border-radius: 12px;
-    margin-bottom: 10px;
     margin-left: auto;
+    margin-bottom: 10px;
     width: fit-content;
+    max-width: 70%;
     color: white;
+    font-size: 16px;
+}
+
+.title {
+    text-align: center;
+    font-size: 40px;
+    font-weight: bold;
+    color: #25D366;
 }
 
 </style>
 """, unsafe_allow_html=True)
 
-# ---------------- LOGIN ----------------
+# ---------------- SIDEBAR ----------------
 st.sidebar.title("💬 Real Chat App")
 
-username = st.sidebar.text_input("Enter Your Name")
-
+username = st.sidebar.text_input("Your Name")
 chat_with = st.sidebar.text_input("Chat With")
 
-# ---------------- CHAT ROOM ----------------
+# ---------------- MAIN TITLE ----------------
+st.markdown(
+    '<p class="title">💬 WhatsApp Clone</p>',
+    unsafe_allow_html=True
+)
+
+# ---------------- CHAT SYSTEM ----------------
 if username and chat_with:
 
     room_id = "_".join(
         sorted([username, chat_with])
     )
 
-    st.title(f"💬 Chat: {chat_with}")
+    st.write(f"### Chat with {chat_with}")
 
     ref = db.reference(f"chats/{room_id}")
 
     messages = ref.get()
 
+    # ---------------- SHOW MESSAGES ----------------
     if messages:
 
         for key, value in messages.items():
@@ -104,7 +107,8 @@ if username and chat_with:
                 st.markdown(
                     f"""
                     <div class="user-box">
-                    {value['message']}<br>
+                    {value['message']}
+                    <br>
                     <small>✓ Seen</small>
                     </div>
                     """,
@@ -124,15 +128,15 @@ if username and chat_with:
                 )
 
     # ---------------- SEND MESSAGE ----------------
-    msg = st.text_input("Type Message")
+    message = st.text_input("Type Message")
 
-    if st.button("Send"):
+    if st.button("Send 📤"):
 
-        if msg:
+        if message:
 
             ref.push({
                 "sender": username,
-                "message": msg,
+                "message": message,
                 "time": str(datetime.now())
             })
 
