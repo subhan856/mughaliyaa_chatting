@@ -21,8 +21,9 @@ if not firebase_admin._apps:
     firebase_admin.initialize_app(
         cred,
         {
-            "databaseURL":
-            https://mughaliyaa-chatting-default-rtdb.firebaseio.com/
+           firebase_config = {
+    "databaseURL": "https://mughaliyaa-chatting-default-rtdb.firebaseio.com/"
+}
         }
     )
 
