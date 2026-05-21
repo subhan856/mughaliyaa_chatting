@@ -2,10 +2,23 @@ import streamlit as st
 
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(
-    page_title="WhatsApp Clone",
+    page_title="WhatsApp Clone Pro",
     page_icon="💬",
     layout="wide"
 )
+
+# ---------------- SESSION STATE ----------------
+if "contacts" not in st.session_state:
+    st.session_state.contacts = [
+        {"name": "Ali", "number": "+92 300 1111111"},
+        {"name": "Ahmed", "number": "+92 301 2222222"},
+    ]
+
+if "messages" not in st.session_state:
+    st.session_state.messages = {
+        "Ali": ["Hello 👋", "How are you?"],
+        "Ahmed": ["Welcome to WhatsApp Clone 🚀"]
+    }
 
 # ---------------- CUSTOM CSS ----------------
 st.markdown("""
@@ -20,9 +33,16 @@ st.markdown("""
     background-color: #202c33;
 }
 
+.title {
+    text-align: center;
+    font-size: 40px;
+    font-weight: bold;
+    color: #25D366;
+}
+
 .chat-box {
     background-color: #202c33;
-    padding: 15px;
+    padding: 12px;
     border-radius: 12px;
     margin-bottom: 10px;
     width: fit-content;
@@ -33,7 +53,7 @@ st.markdown("""
 
 .user-box {
     background-color: #005c4b;
-    padding: 15px;
+    padding: 12px;
     border-radius: 12px;
     margin-left: auto;
     margin-bottom: 10px;
@@ -43,63 +63,83 @@ st.markdown("""
     font-size: 16px;
 }
 
-.title {
-    text-align: center;
-    font-size: 40px;
-    font-weight: bold;
-    color: #25D366;
+.contact-card {
+    background-color: #111b21;
+    padding: 10px;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    color: white;
 }
 
 </style>
 """, unsafe_allow_html=True)
 
 # ---------------- SIDEBAR ----------------
-st.sidebar.title("💬 Chats")
+st.sidebar.title("💬 WhatsApp Clone")
 
-users = [
-    "Ali",
-    "Ahmed",
-    "Hamza",
-    "Usman",
-    "Zain"
-]
+st.sidebar.subheader("➕ Add New Contact")
 
-selected_user = st.sidebar.radio(
-    "Select User",
-    users
+new_name = st.sidebar.text_input("Contact Name")
+new_number = st.sidebar.text_input("Phone Number")
+
+if st.sidebar.button("Add Contact"):
+
+    if new_name and new_number:
+
+        # Add Contact
+        st.session_state.contacts.append({
+            "name": new_name,
+            "number": new_number
+        })
+
+        # Create Empty Chat
+        st.session_state.messages[new_name] = []
+
+        st.sidebar.success("Contact Added ✅")
+
+# ---------------- CONTACT LIST ----------------
+st.sidebar.subheader("📱 Your Contacts")
+
+contact_names = [c["name"] for c in st.session_state.contacts]
+
+selected_contact = st.sidebar.radio(
+    "Select Chat",
+    contact_names
 )
 
-# ---------------- MAIN UI ----------------
+# ---------------- MAIN TITLE ----------------
 st.markdown(
-    '<p class="title">WhatsApp Clone</p>',
+    '<p class="title">💬 WhatsApp Clone Pro</p>',
     unsafe_allow_html=True
 )
 
-st.write(f"### Chat with {selected_user}")
+# ---------------- SHOW CONTACT INFO ----------------
+selected_data = next(
+    c for c in st.session_state.contacts
+    if c["name"] == selected_contact
+)
+
+st.write(f"### 👤 {selected_data['name']}")
+st.write(f"📞 {selected_data['number']}")
+
+st.divider()
 
 # ---------------- CHAT AREA ----------------
-st.markdown(
-    '<div class="chat-box">Hello Bro 👋</div>',
-    unsafe_allow_html=True
-)
+for msg in st.session_state.messages[selected_contact]:
 
-st.markdown(
-    '<div class="user-box">Hi! How are you? 😄</div>',
-    unsafe_allow_html=True
-)
+    st.markdown(
+        f'<div class="chat-box">{msg}</div>',
+        unsafe_allow_html=True
+    )
 
-st.markdown(
-    '<div class="chat-box">I am fine 🚀</div>',
-    unsafe_allow_html=True
-)
-
-# ---------------- MESSAGE INPUT ----------------
-message = st.text_input("Type a message")
+# ---------------- SEND MESSAGE ----------------
+message = st.text_input("Type your message")
 
 if st.button("Send 📤"):
+
     if message:
-        st.markdown(
-            f'<div class="user-box">{message}</div>',
-            unsafe_allow_html=True
-        )
-        st.success("Message Sent ✅")
+
+        st.session_state.messages[selected_contact].append(message)
+
+        st.rerun()
+       
