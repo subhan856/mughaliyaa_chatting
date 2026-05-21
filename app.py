@@ -22,7 +22,7 @@ if not firebase_admin._apps:
         cred,
         {
             "databaseURL":
-            "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com/"
+            https://mughaliyaa-chatting-default-rtdb.firebaseio.com/
         }
     )
 
