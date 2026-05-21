@@ -1,24 +1,45 @@
 import streamlit as st
+import firebase_admin
+from firebase_admin import credentials
+from firebase_admin import db
+import json
+import os
+from datetime import datetime
 
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(
-    page_title="WhatsApp Clone Pro",
+    page_title="Real Chat App",
     page_icon="💬",
     layout="wide"
 )
 
-# ---------------- SESSION STATE ----------------
-if "contacts" not in st.session_state:
-    st.session_state.contacts = [
-        {"name": "Ali", "number": "+92 300 1111111"},
-        {"name": "Ahmed", "number": "+92 301 2222222"},
-    ]
+# ---------------- FIREBASE SETUP ----------------
 
-if "messages" not in st.session_state:
-    st.session_state.messages = {
-        "Ali": ["Hello 👋", "How are you?"],
-        "Ahmed": ["Welcome to WhatsApp Clone 🚀"]
-    }
+firebase_config = {
+    "type": "service_account",
+    "project_id": "YOUR_PROJECT_ID",
+    "private_key_id": "YOUR_PRIVATE_KEY_ID",
+    "private_key": "YOUR_PRIVATE_KEY",
+    "client_email": "YOUR_CLIENT_EMAIL",
+    "client_id": "YOUR_CLIENT_ID",
+    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+    "token_uri": "https://oauth2.googleapis.com/token",
+    "auth_provider_x509_cert_url":
+    "https://www.googleapis.com/oauth2/v1/certs",
+    "client_x509_cert_url": "YOUR_CERT_URL"
+}
+
+if not firebase_admin._apps:
+
+    cred = credentials.Certificate(firebase_config)
+
+    firebase_admin.initialize_app(
+        cred,
+        {
+            "databaseURL":
+            "YOUR_FIREBASE_DATABASE_URL"
+        }
+    )
 
 # ---------------- CUSTOM CSS ----------------
 st.markdown("""
@@ -33,113 +54,86 @@ st.markdown("""
     background-color: #202c33;
 }
 
-.title {
-    text-align: center;
-    font-size: 40px;
-    font-weight: bold;
-    color: #25D366;
-}
-
 .chat-box {
     background-color: #202c33;
     padding: 12px;
     border-radius: 12px;
     margin-bottom: 10px;
-    width: fit-content;
-    max-width: 70%;
     color: white;
-    font-size: 16px;
 }
 
 .user-box {
     background-color: #005c4b;
     padding: 12px;
     border-radius: 12px;
-    margin-left: auto;
     margin-bottom: 10px;
+    margin-left: auto;
     width: fit-content;
-    max-width: 70%;
-    color: white;
-    font-size: 16px;
-}
-
-.contact-card {
-    background-color: #111b21;
-    padding: 10px;
-    border-radius: 10px;
-    margin-bottom: 8px;
     color: white;
 }
 
 </style>
 """, unsafe_allow_html=True)
 
-# ---------------- SIDEBAR ----------------
-st.sidebar.title("💬 WhatsApp Clone")
+# ---------------- LOGIN ----------------
+st.sidebar.title("💬 Real Chat App")
 
-st.sidebar.subheader("➕ Add New Contact")
+username = st.sidebar.text_input("Enter Your Name")
 
-new_name = st.sidebar.text_input("Contact Name")
-new_number = st.sidebar.text_input("Phone Number")
+chat_with = st.sidebar.text_input("Chat With")
 
-if st.sidebar.button("Add Contact"):
+# ---------------- CHAT ROOM ----------------
+if username and chat_with:
 
-    if new_name and new_number:
-
-        # Add Contact
-        st.session_state.contacts.append({
-            "name": new_name,
-            "number": new_number
-        })
-
-        # Create Empty Chat
-        st.session_state.messages[new_name] = []
-
-        st.sidebar.success("Contact Added ✅")
-
-# ---------------- CONTACT LIST ----------------
-st.sidebar.subheader("📱 Your Contacts")
-
-contact_names = [c["name"] for c in st.session_state.contacts]
-
-selected_contact = st.sidebar.radio(
-    "Select Chat",
-    contact_names
-)
-
-# ---------------- MAIN TITLE ----------------
-st.markdown(
-    '<p class="title">💬 WhatsApp Clone Pro</p>',
-    unsafe_allow_html=True
-)
-
-# ---------------- SHOW CONTACT INFO ----------------
-selected_data = next(
-    c for c in st.session_state.contacts
-    if c["name"] == selected_contact
-)
-
-st.write(f"### 👤 {selected_data['name']}")
-st.write(f"📞 {selected_data['number']}")
-
-st.divider()
-
-# ---------------- CHAT AREA ----------------
-for msg in st.session_state.messages[selected_contact]:
-
-    st.markdown(
-        f'<div class="chat-box">{msg}</div>',
-        unsafe_allow_html=True
+    room_id = "_".join(
+        sorted([username, chat_with])
     )
 
-# ---------------- SEND MESSAGE ----------------
-message = st.text_input("Type your message")
+    st.title(f"💬 Chat: {chat_with}")
 
-if st.button("Send 📤"):
+    ref = db.reference(f"chats/{room_id}")
 
-    if message:
+    messages = ref.get()
 
-        st.session_state.messages[selected_contact].append(message)
+    if messages:
 
-        st.rerun()
-       
+        for key, value in messages.items():
+
+            if value["sender"] == username:
+
+                st.markdown(
+                    f"""
+                    <div class="user-box">
+                    {value['message']}<br>
+                    <small>✓ Seen</small>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+            else:
+
+                st.markdown(
+                    f"""
+                    <div class="chat-box">
+                    <b>{value['sender']}:</b>
+                    {value['message']}
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+    # ---------------- SEND MESSAGE ----------------
+    msg = st.text_input("Type Message")
+
+    if st.button("Send"):
+
+        if msg:
+
+            ref.push({
+                "sender": username,
+                "message": msg,
+                "time": str(datetime.now())
+            })
+
+            st.rerun()
